@@ -12,10 +12,20 @@
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "codeflag.helloWorld",
-      "title": "code flag"
-    }]
+    "commands": [
+      {
+        "command": "codeflag.welcomeMessage",
+        "title": "welcome message"
+      },
+      {
+        "command": "codeflag.flag",
+        "title": "Flag code"
+      },
+      {
+        "command": "codeflag.unflag",
+        "title": "Unflag code"
+      }
+    ]
   },
   "scripts": {
     "lint": "eslint .",
