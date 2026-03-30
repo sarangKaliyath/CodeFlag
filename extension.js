@@ -1,7 +1,12 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require("vscode");
-const { getFlags, addFlag, removeFlag } = require("./store/flagStore");
+const {
+  getFlags,
+  addFlag,
+  removeFlag,
+  initialStore,
+} = require("./store/flagStore");
 const { updateDecorations } = require("./ui/decoration");
 
 // This method is called when your extension is activated
@@ -12,6 +17,18 @@ const { updateDecorations } = require("./ui/decoration");
  */
 
 function activate(context) {
+  initialStore(context);
+
+  // Apply to all visible editors immediately
+  vscode.window.visibleTextEditors.forEach((editor) => {
+    updateDecorations(editor);
+  });
+
+  // Fallback for active editor
+  if (vscode.window.activeTextEditor) {
+    updateDecorations(vscode.window.activeTextEditor);
+  }
+
   const welcomeMessage = vscode.commands.registerCommand(
     "codeflag.welcomeMessage",
     function () {
