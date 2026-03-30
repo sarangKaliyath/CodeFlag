@@ -30,15 +30,24 @@ function activate(context) {
       const selection = editor.selection;
 
       // Normalize selection
-      const startLine = Math.min(selection.start.line, selection.end.line);
-      const endLine = Math.max(selection.start.line, selection.end.line);
+      const start = selection.start;
+      const end = selection.end;
+
+      const range = new vscode.Range(
+        Math.min(start.line, end.line),
+        0,
+        Math.max(start.line, end.line),
+        0,
+      );
 
       const flags = getFlags();
 
-      // Prevent duplicate range
+      // Prevent duplicate
       const alreadyExists = flags.find(
         (f) =>
-          f.uri === uri && f.startLine === startLine && f.endLine === endLine,
+          f.uri === uri &&
+          f.range.start.line === range.start.line &&
+          f.range.end.line === range.end.line,
       );
 
       if (alreadyExists) {
@@ -48,23 +57,17 @@ function activate(context) {
         return;
       }
 
-      // Add flag
-      addFlag(uri, startLine, endLine);
+      addFlag(uri, range);
 
       updateDecorations(editor);
 
-      if (startLine === endLine) {
-        vscode.window.showInformationMessage(
-          `Flag added at line ${startLine + 1}`,
-        );
-      } else {
-        vscode.window.showInformationMessage(
-          `Flag added: ${startLine + 1} → ${endLine + 1}`,
-        );
-      }
+      vscode.window.showInformationMessage(
+        `Flag added: ${range.start.line + 1} → ${range.end.line + 1}`,
+      );
     },
   );
 
+  // UNFLAG (based on cursor inside range)
   const codeUnflag = vscode.commands.registerCommand(
     "codeflag.unflag",
     function () {
@@ -76,13 +79,14 @@ function activate(context) {
 
       const flags = getFlags();
 
-      const index = flags.findIndex(
-        (f) => f.uri === uri && line >= f.startLine && line <= f.endLine,
-      );
+      const index = flags.findIndex((f) => {
+        if (f.uri !== uri) return false;
+
+        return line >= f.range.start.line && line <= f.range.end.line;
+      });
 
       if (index >= 0) {
         removeFlag(index);
-
         updateDecorations(editor);
 
         vscode.window.showInformationMessage("Codeflag removed");
@@ -92,53 +96,17 @@ function activate(context) {
     },
   );
 
-  vscode.workspace.onDidChangeTextDocument((event) => {
-    const uri = event.document.uri.toString();
+  context.subscriptions.push(codeFlag, codeUnflag);
 
-    const flags = getFlags();
+  // Refresh on editor switch
+  vscode.window.onDidChangeActiveTextEditor((editor) => {
+    if (editor) updateDecorations(editor);
+  });
 
-    event.contentChanges.forEach((change) => {
-      const startLine = change.range.start.line;
-      const startChar = change.range.start.character;
-
-      const endLine = change.range.end.line;
-
-      const linesAdded =
-        change.text.split("\n").length - 1 - (endLine - startLine);
-
-      if (linesAdded === 0) return;
-
-      flags.forEach((f) => {
-        if (f.uri !== uri) return;
-
-        // change ABOVE flag → shift entire flag
-        if (startLine < f.startLine) {
-          f.startLine += linesAdded;
-          f.endLine += linesAdded;
-        }
-        // change INSIDE flag → expand/shrink end
-        else if (startLine >= f.startLine && startLine <= f.endLine) {
-          // If at START of flag line → shift entire block
-          if (startLine === f.startLine && startChar === 0) {
-            f.startLine += linesAdded;
-            f.endLine += linesAdded;
-          }
-          // If at END of line → DO NOTHING (this is your bug fix)
-          else if (startLine === f.endLine && startChar > 0) {
-            // don't expand or move
-            return;
-          }
-          // Otherwise → expand block
-          else {
-            f.endLine += linesAdded;
-          }
-        }
-      });
-    });
-
-    // Re-render decorations
+  // Refresh on document open
+  vscode.workspace.onDidOpenTextDocument((doc) => {
     const editor = vscode.window.activeTextEditor;
-    if (editor && editor.document.uri.toString() === uri) {
+    if (editor && editor.document === doc) {
       updateDecorations(editor);
     }
   });

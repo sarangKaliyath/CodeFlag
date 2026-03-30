@@ -1,23 +1,17 @@
-const vscode = require('vscode');
-const path = require('path');
-const { getFlags } = require('../store/flagStore');
-
-const decorationType = vscode.window.createTextEditorDecorationType({
-	gutterIconPath: path.join(__dirname, '../flag.svg'),
-	gutterIconSize: 'contain',
-    // Preventing flagging multiple lines, when clicking on enter
-    // at start of the flagged code.
-    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
-});
+const vscode = require("vscode");
+const path = require("path");
+const { getFlags } = require("../store/flagStore");
 
 const startDecoration = vscode.window.createTextEditorDecorationType({
-  gutterIconPath: path.join(__dirname, '../flag.svg'),
-  gutterIconSize: 'contain',
+  gutterIconPath: path.join(__dirname, "../flag.svg"),
+  gutterIconSize: "contain",
+  rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
 });
 
 const endDecoration = vscode.window.createTextEditorDecorationType({
-  gutterIconPath: path.join(__dirname, '../end.svg'),
-  gutterIconSize: 'contain',
+  gutterIconPath: path.join(__dirname, "../end.svg"),
+  gutterIconSize: "contain",
+  rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
 });
 
 function updateDecorations(editor) {
@@ -31,15 +25,18 @@ function updateDecorations(editor) {
   getFlags()
     .filter((f) => f.uri === uri)
     .forEach((f) => {
-      // START marker
+      const startLine = f.range.start.line;
+      const endLine = f.range.end.line;
+
+      // START
       startDecorations.push({
-        range: new vscode.Range(f.startLine, 0, f.startLine, 0),
+        range: new vscode.Range(startLine, 0, startLine, 0),
       });
 
-      // END marker (only if different)
-      if (f.endLine !== f.startLine) {
+      // END (if different)
+      if (endLine !== startLine) {
         endDecorations.push({
-          range: new vscode.Range(f.endLine, 0, f.endLine, 0),
+          range: new vscode.Range(endLine, 0, endLine, 0),
         });
       }
     });
@@ -49,5 +46,5 @@ function updateDecorations(editor) {
 }
 
 module.exports = {
-	updateDecorations
+  updateDecorations,
 };

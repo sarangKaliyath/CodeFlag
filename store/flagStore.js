@@ -18,12 +18,8 @@ function getFlags() {
 /**
  * Add a flag using start + end
  */
-function addFlag(uri, startLine, endLine) {
-  flags.push({
-    uri,
-    startLine,
-    endLine,
-  });
+function addFlag(uri, range) {
+  flags.push({ uri, range });
 }
 
 /**
