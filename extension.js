@@ -99,6 +99,8 @@ function activate(context) {
 
     event.contentChanges.forEach((change) => {
       const startLine = change.range.start.line;
+      const startChar = change.range.start.character;
+
       const endLine = change.range.end.line;
 
       const linesAdded =
@@ -116,11 +118,18 @@ function activate(context) {
         }
         // change INSIDE flag → expand/shrink end
         else if (startLine >= f.startLine && startLine <= f.endLine) {
-          // If insertion happens exactly at start → shift whole block
-          if (startLine === f.startLine) {
+          // If at START of flag line → shift entire block
+          if (startLine === f.startLine && startChar === 0) {
             f.startLine += linesAdded;
             f.endLine += linesAdded;
-          } else {
+          }
+          // If at END of line → DO NOTHING (this is your bug fix)
+          else if (startLine === f.endLine && startChar > 0) {
+            // don't expand or move
+            return;
+          }
+          // Otherwise → expand block
+          else {
             f.endLine += linesAdded;
           }
         }
