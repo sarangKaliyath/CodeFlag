@@ -73,13 +73,15 @@ function loadFlags() {
 
   const stored = workspaceState.get(STORAGE_KEY, []);
 
-  flags = stored.map((f) => ({
-    uri: f.uri,
-    range: new vscode.Range(
-      new vscode.Position(f.start.line, f.start.character),
-      new vscode.Position(f.end.line, f.end.character)
-    ),
-  }));
+  flags = stored
+    .filter((f) => f && f.uri && f.start && f.end)
+    .map((f) => ({
+      uri: f.uri,
+      range: new vscode.Range(
+        new vscode.Position(f.start.line, f.start.character),
+        new vscode.Position(f.end.line, f.end.character)
+      ),
+    }));
 }
 
 
