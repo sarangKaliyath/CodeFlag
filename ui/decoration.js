@@ -1,24 +1,68 @@
-const vscode = require('vscode');
-const path = require('path');
-const { getFlags } = require('../store/flagStore');
+const vscode = require("vscode");
+const path = require("path");
+const { getFlags } = require("../store/flagStore");
 
-const decorationType = vscode.window.createTextEditorDecorationType({
-	gutterIconPath: path.join(__dirname, '../flag.svg'),
-	gutterIconSize: 'contain'
+const startDecoration = vscode.window.createTextEditorDecorationType({
+  gutterIconPath: path.join(__dirname, "../flag.svg"),
+  gutterIconSize: "contain",
+  rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+});
+
+const endDecoration = vscode.window.createTextEditorDecorationType({
+  gutterIconPath: path.join(__dirname, "../end.svg"),
+  gutterIconSize: "contain",
+  rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+});
+
+const blockDecoration = vscode.window.createTextEditorDecorationType({
+  backgroundColor: "rgba(255, 215, 0, 0.15)", // subtle yellow
+  isWholeLine: true,
+  rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
 });
 
 function updateDecorations(editor) {
-	if (!editor) return;
+  if (!editor) return;
 
-	const uri = editor.document.uri.toString();
+  const uri = editor.document.uri.toString();
 
-	const ranges = getFlags()
-		.filter(b => b.uri === uri)
-		.map(b => new vscode.Range(b.line, 0, b.line, 0));
+  const startDecorations = [];
+  const endDecorations = [];
+  const blockDecorations = [];
 
-	editor.setDecorations(decorationType, ranges);
+  getFlags()
+    .filter((f) => f.uri === uri)
+    .forEach((f) => {
+      const startLine = f.range.start.line;
+      const endLine = f.range.end.line;
+
+      // START
+      startDecorations.push({
+        range: new vscode.Range(startLine, 0, startLine, 0),
+      });
+
+      // END (if different)
+      if (endLine !== startLine) {
+        endDecorations.push({
+          range: new vscode.Range(endLine, 0, endLine, 0),
+        });
+      }
+
+      // BLOCK (highlight flagged block)
+      blockDecorations.push({
+        range: new vscode.Range(
+          startLine,
+          0,
+          endLine,
+          editor.document.lineAt(endLine).range.end.character,
+        ),
+      });
+    });
+
+  editor.setDecorations(startDecoration, startDecorations);
+  editor.setDecorations(endDecoration, endDecorations);
+  editor.setDecorations(blockDecoration, blockDecorations);
 }
 
 module.exports = {
-	updateDecorations
+  updateDecorations,
 };

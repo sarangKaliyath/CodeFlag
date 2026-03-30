@@ -1,21 +1,51 @@
+const vscode = require("vscode");
+
 let flags = [];
 
+/**
+ * Shape:
+ * {
+ *   uri: string,
+ *   startLine: number,
+ *   endLine: number
+ * }
+ */
+
 function getFlags() {
-	return flags;
+  return flags;
 }
 
-function addFlag(flag) {
-	if(!flag) return;
-    flags.push(flag);
+/**
+ * Add a flag using start + end
+ */
+function addFlag(uri, range) {
+  flags.push({ uri, range });
 }
 
-function removeFlag(index = 0) {
-    if(index < 0 || index > flags.length) return;
-	flags.splice(index, 1);
+/**
+ * Remove by index
+ */
+function removeFlag(index) {
+  flags.splice(index, 1);
+}
+
+/**
+ * Remove flag by position
+ */
+function removeFlagAt(uri, line) {
+  flags = flags.filter(
+    (f) =>
+      !(
+        f.uri === uri &&
+        line >= f.startLine &&
+        line <= f.endLine
+      )
+  );
 }
 
 module.exports = {
-	getFlags,
-	addFlag,
-	removeFlag
+  getFlags,
+  addFlag,
+  removeFlag,
+  removeFlagAt, // optional but useful
 };
