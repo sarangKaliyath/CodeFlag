@@ -4,7 +4,10 @@ const { getFlags } = require('../store/flagStore');
 
 const decorationType = vscode.window.createTextEditorDecorationType({
 	gutterIconPath: path.join(__dirname, '../flag.svg'),
-	gutterIconSize: 'contain'
+	gutterIconSize: 'contain',
+    // Preventing flagging multiple lines, when clicking on enter
+    // at start of the flagged code.
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 });
 
 function updateDecorations(editor) {
