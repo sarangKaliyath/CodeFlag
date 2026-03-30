@@ -42,28 +42,52 @@ function activate(context) {
 
       const flags = getFlags();
 
-      // Prevent duplicate
-      const alreadyExists = flags.find(
-        (f) =>
-          f.uri === uri &&
-          f.range.start.line === range.start.line &&
-          f.range.end.line === range.end.line,
-      );
+      // Find overlapping flags
+      const overlappingFlags = flags.filter((f) => {
+        if (f.uri !== uri) return false;
 
-      if (alreadyExists) {
-        vscode.window.showInformationMessage(
-          "Flag already exists for this selection",
+        const existingStart = f.range.start.line;
+        const existingEnd = f.range.end.line;
+
+        return (
+          range.start.line <= existingEnd && range.end.line >= existingStart
         );
-        return;
+      });
+
+      // Compute merged range
+      let mergedStart = range.start.line;
+      let mergedEnd = range.end.line;
+
+      overlappingFlags.forEach((f) => {
+        mergedStart = Math.min(mergedStart, f.range.start.line);
+        mergedEnd = Math.max(mergedEnd, f.range.end.line);
+      });
+
+      // Remove overlapping flags
+      for (let i = flags.length - 1; i >= 0; i--) {
+        const f = flags[i];
+        if (f.uri === uri && overlappingFlags.includes(f)) {
+          removeFlag(i);
+        }
       }
 
-      addFlag(uri, range);
+      // Add merged flag
+      const mergedRange = new vscode.Range(mergedStart, 0, mergedEnd, 0);
+
+      addFlag(uri, mergedRange);
 
       updateDecorations(editor);
 
-      vscode.window.showInformationMessage(
-        `Flag added: ${range.start.line + 1} → ${range.end.line + 1}`,
-      );
+      // message
+      if (overlappingFlags.length > 0) {
+        vscode.window.showInformationMessage(
+          `Flags merged: ${mergedStart + 1} → ${mergedEnd + 1}`,
+        );
+      } else {
+        vscode.window.showInformationMessage(
+          `Flag added: ${mergedStart + 1} → ${mergedEnd + 1}`,
+        );
+      }
     },
   );
 
