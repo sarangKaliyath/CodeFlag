@@ -9,7 +9,11 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:codeflag.flag",
+    "onCommand:codeflag.unflag"
+  ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
@@ -25,7 +29,33 @@
         "command": "codeflag.unflag",
         "title": "Unflag code"
       }
-    ]
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "codeflag.flag",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        },
+        {
+          "command": "codeflag.unflag",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        }
+      ],
+      "editor/gutter/context": [
+        {
+          "command": "codeflag.flag",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        },
+        {
+          "command": "codeflag.unflag",
+          "when": "editorTextFocus",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "lint": "eslint .",

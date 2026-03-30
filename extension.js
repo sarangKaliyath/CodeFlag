@@ -1,7 +1,12 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require("vscode");
-const { getFlags, addFlag, removeFlag } = require("./store/flagStore");
+const {
+  getFlags,
+  addFlag,
+  removeFlag,
+  initialStore,
+} = require("./store/flagStore");
 const { updateDecorations } = require("./ui/decoration");
 
 // This method is called when your extension is activated
@@ -12,6 +17,18 @@ const { updateDecorations } = require("./ui/decoration");
  */
 
 function activate(context) {
+  initialStore(context);
+
+  // Apply to all visible editors immediately
+  vscode.window.visibleTextEditors.forEach((editor) => {
+    updateDecorations(editor);
+  });
+
+  // Fallback for active editor
+  if (vscode.window.activeTextEditor) {
+    updateDecorations(vscode.window.activeTextEditor);
+  }
+
   const welcomeMessage = vscode.commands.registerCommand(
     "codeflag.welcomeMessage",
     function () {
@@ -30,15 +47,25 @@ function activate(context) {
       const selection = editor.selection;
 
       // Normalize selection
-      const start = selection.start;
-      const end = selection.end;
+      let startLine;
+      let endLine;
 
-      const range = new vscode.Range(
-        Math.min(start.line, end.line),
-        0,
-        Math.max(start.line, end.line),
-        0,
-      );
+      if (selection.isEmpty) {
+        // single cursor or gutter click
+        const line = selection.active.line;
+        startLine = line;
+        endLine = line;
+      } else {
+        // multi-line selection
+        startLine = Math.min(selection.start.line, selection.end.line);
+        endLine = Math.max(selection.start.line, selection.end.line);
+      }
+
+      if (typeof startLine !== "number" || typeof endLine !== "number") {
+        console.error("Invalid merged range", startLine, endLine);
+        return;
+      }
+      const range = new vscode.Range(startLine, 0, endLine, 0);
 
       const flags = getFlags();
 
@@ -72,6 +99,11 @@ function activate(context) {
       }
 
       // Add merged flag
+      if (typeof mergedStart !== "number" || typeof mergedEnd !== "number") {
+        console.error("Invalid merged range", mergedStart, mergedEnd);
+        return;
+      }
+
       const mergedRange = new vscode.Range(mergedStart, 0, mergedEnd, 0);
 
       addFlag(uri, mergedRange);
@@ -99,7 +131,16 @@ function activate(context) {
       if (!editor) return;
 
       const uri = editor.document.uri.toString();
-      const line = editor.selection.active.line;
+
+      let line;
+
+      if (editor.selection.isEmpty) {
+        // single cursor or gutter click
+        line = editor.selection.active.line;
+      } else {
+        // multi-line selection: unflag the start line
+        line = editor.selection.start.line;
+      }
 
       const flags = getFlags();
 
