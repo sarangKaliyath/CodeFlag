@@ -14,6 +14,12 @@ const endDecoration = vscode.window.createTextEditorDecorationType({
   rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
 });
 
+const blockDecoration = vscode.window.createTextEditorDecorationType({
+  backgroundColor: "rgba(255, 215, 0, 0.15)", // subtle yellow
+  isWholeLine: true,
+  rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+});
+
 function updateDecorations(editor) {
   if (!editor) return;
 
@@ -21,6 +27,7 @@ function updateDecorations(editor) {
 
   const startDecorations = [];
   const endDecorations = [];
+  const blockDecorations = [];
 
   getFlags()
     .filter((f) => f.uri === uri)
@@ -39,10 +46,21 @@ function updateDecorations(editor) {
           range: new vscode.Range(endLine, 0, endLine, 0),
         });
       }
+
+      // BLOCK (highlight flagged block)
+      blockDecorations.push({
+        range: new vscode.Range(
+          startLine,
+          0,
+          endLine,
+          editor.document.lineAt(endLine).range.end.character,
+        ),
+      });
     });
 
   editor.setDecorations(startDecoration, startDecorations);
   editor.setDecorations(endDecoration, endDecorations);
+  editor.setDecorations(blockDecoration, blockDecorations);
 }
 
 module.exports = {
