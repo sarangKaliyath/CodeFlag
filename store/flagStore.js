@@ -1,40 +1,22 @@
+const vscode = require("vscode");
+
 let flags = [];
 
 function getFlags() {
   return flags;
 }
 
-function addFlag(flag) {
-  if (!flag) return;
-  flags.push(flag);
+function addFlag(uri, line) {
+  const range = new vscode.Range(line, 0, line, 0);
+  flags.push({ uri, range });
 }
 
-function removeFlag(index = 0) {
-  if (index < 0 || index > flags.length) return;
+function removeFlag(index) {
   flags.splice(index, 1);
-}
-
-function updateFlagPositions(uri, changedLine, lineDiff, isLineSplit) {
-  const flags = getFlags();
-
-  flags.forEach((flag) => {
-    if (flag.uri !== uri) return;
-
-    if (isLineSplit) {
-      if (flag.line > changedLine) {
-        flag.line += lineDiff;
-      }
-    } else {
-      if (flag.line >= changedLine) {
-        flag.line += lineDiff;
-      }
-    }
-  });
 }
 
 module.exports = {
   getFlags,
   addFlag,
   removeFlag,
-  updateFlagPositions,
 };

@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require("vscode");
-const { getFlags, addFlag, removeFlag, updateFlagPositions } = require("./store/flagStore");
+const { getFlags, addFlag, removeFlag } = require("./store/flagStore");
 const { updateDecorations } = require("./ui/decoration");
 
 // This method is called when your extension is activated
@@ -32,7 +32,7 @@ function activate(context) {
       const index = getFlags().findIndex((b) => b.uri === uri && b.line == line);
 
       if (index === -1) {
-        addFlag({ uri, line });
+        addFlag(uri, line);
 		updateDecorations(editor);
         vscode.window.showInformationMessage("Codeflag added");
       } else {
@@ -62,32 +62,6 @@ function activate(context) {
       }
     },
   );
-
-  vscode.workspace.onDidChangeTextDocument((event) => {
-    const uri = event.document.uri.toString();
-
-    event.contentChanges.forEach((change) => {
-      const startLine = change.range.start.line;
-      const endLine = change.range.end.line;
-
-      const newLines = change.text.split("\n").length - 1;
-      const oldLines = endLine - startLine;
-
-      const lineDiff = newLines - oldLines;
-
-      if (lineDiff === 0) return;
-
-      const isLineSplit =
-        startLine === endLine &&
-        change.text.includes("\n") &&
-        change.range.start.character > 0;
-
-      updateFlagPositions(uri, startLine, lineDiff, isLineSplit);
-    });
-
-    const editor = vscode.window.activeTextEditor;
-    if (editor) updateDecorations(editor);
-  });
 
   context.subscriptions.push(welcomeMessage, codeFlag, codeUnflag);
 }

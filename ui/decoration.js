@@ -8,15 +8,17 @@ const decorationType = vscode.window.createTextEditorDecorationType({
 });
 
 function updateDecorations(editor) {
-	if (!editor) return;
+  if (!editor) return;
 
-	const uri = editor.document.uri.toString();
+  const uri = editor.document.uri.toString();
 
-	const ranges = getFlags()
-		.filter(b => b.uri === uri)
-		.map(b => new vscode.Range(b.line, 0, b.line, 0));
+  const decorations = getFlags()
+    .filter((f) => f.uri === uri)
+    .map((f) => ({
+      range: f.range,
+    }));
 
-	editor.setDecorations(decorationType, ranges);
+  editor.setDecorations(decorationType, decorations);
 }
 
 module.exports = {
