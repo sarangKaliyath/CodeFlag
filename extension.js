@@ -89,7 +89,15 @@ function activate(context) {
       }
 
       // Add merged flag
-      const mergedRange = new vscode.Range(mergedStart, 0, mergedEnd, 0);
+      if (
+  typeof mergedStart !== "number" ||
+  typeof mergedEnd !== "number"
+) {
+  console.error("Invalid merged range", mergedStart, mergedEnd);
+  return;
+}
+
+const mergedRange = new vscode.Range(mergedStart, 0, mergedEnd, 0);
 
       addFlag(uri, mergedRange);
 

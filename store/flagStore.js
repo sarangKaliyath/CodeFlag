@@ -20,9 +20,9 @@ const STORAGE_KEY = "codeflags";
  */
 function initialStore(context) {
   workspaceState = context.workspaceState;
+  // workspaceState.update(STORAGE_KEY, []);
   loadFlags();
 }
-
 
 function getFlags() {
   return flags;
@@ -65,16 +65,29 @@ function saveFlags() {
   workspaceState.update(STORAGE_KEY, serializable);
 }
 
+function isValidNumber(n) {
+  return typeof n === "number" && !isNaN(n) && n >= 0;
+}
 /**
  * Load flags (recreate Range)
  */
+
 function loadFlags() {
   if (!workspaceState) return;
 
   const stored = workspaceState.get(STORAGE_KEY, []);
 
   flags = stored
-    .filter((f) => f && f.uri && f.start && f.end)
+    .filter((f) =>
+      f &&
+      f.uri &&
+      f.start &&
+      f.end &&
+      isValidNumber(f.start.line) &&
+      isValidNumber(f.start.character) &&
+      isValidNumber(f.end.line) &&
+      isValidNumber(f.end.character)
+    )
     .map((f) => ({
       uri: f.uri,
       range: new vscode.Range(
