@@ -19,85 +19,120 @@ function activate(context) {
     },
   );
 
-const codeFlag = vscode.commands.registerCommand(
-  "codeflag.flag",
-  function () {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
+  const codeFlag = vscode.commands.registerCommand(
+    "codeflag.flag",
+    function () {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
 
-    const document = editor.document;
-    const uri = document.uri.toString();
-    const selection = editor.selection;
+      const document = editor.document;
+      const uri = document.uri.toString();
+      const selection = editor.selection;
 
-    // Normalize selection
-    const startLine = Math.min(selection.start.line, selection.end.line);
-    const endLine = Math.max(selection.start.line, selection.end.line);
+      // Normalize selection
+      const startLine = Math.min(selection.start.line, selection.end.line);
+      const endLine = Math.max(selection.start.line, selection.end.line);
 
-    const flags = getFlags();
+      const flags = getFlags();
 
-    // Prevent duplicate range
-    const alreadyExists = flags.find(
-      (f) =>
-        f.uri === uri &&
-        f.startLine === startLine &&
-        f.endLine === endLine
-    );
-
-    if (alreadyExists) {
-      vscode.window.showInformationMessage(
-        "Flag already exists for this selection"
+      // Prevent duplicate range
+      const alreadyExists = flags.find(
+        (f) =>
+          f.uri === uri && f.startLine === startLine && f.endLine === endLine,
       );
-      return;
-    }
 
-    // Add flag
-    addFlag(uri, startLine, endLine);
+      if (alreadyExists) {
+        vscode.window.showInformationMessage(
+          "Flag already exists for this selection",
+        );
+        return;
+      }
 
-    updateDecorations(editor);
-
-    if (startLine === endLine) {
-      vscode.window.showInformationMessage(
-        `Flag added at line ${startLine + 1}`
-      );
-    } else {
-      vscode.window.showInformationMessage(
-        `Flag added: ${startLine + 1} → ${endLine + 1}`
-      );
-    }
-  }
-);
-
- const codeUnflag = vscode.commands.registerCommand(
-  "codeflag.unflag",
-  function () {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) return;
-
-    const uri = editor.document.uri.toString();
-    const line = editor.selection.active.line;
-
-    const flags = getFlags();
-
-    const index = flags.findIndex(
-      (f) =>
-        f.uri === uri &&
-        line >= f.startLine &&
-        line <= f.endLine
-    );
-
-    if (index >= 0) {
-      removeFlag(index);
+      // Add flag
+      addFlag(uri, startLine, endLine);
 
       updateDecorations(editor);
 
-      vscode.window.showInformationMessage("Codeflag removed");
-    } else {
-      vscode.window.showInformationMessage(
-        "No flag found on this line"
+      if (startLine === endLine) {
+        vscode.window.showInformationMessage(
+          `Flag added at line ${startLine + 1}`,
+        );
+      } else {
+        vscode.window.showInformationMessage(
+          `Flag added: ${startLine + 1} → ${endLine + 1}`,
+        );
+      }
+    },
+  );
+
+  const codeUnflag = vscode.commands.registerCommand(
+    "codeflag.unflag",
+    function () {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
+
+      const uri = editor.document.uri.toString();
+      const line = editor.selection.active.line;
+
+      const flags = getFlags();
+
+      const index = flags.findIndex(
+        (f) => f.uri === uri && line >= f.startLine && line <= f.endLine,
       );
+
+      if (index >= 0) {
+        removeFlag(index);
+
+        updateDecorations(editor);
+
+        vscode.window.showInformationMessage("Codeflag removed");
+      } else {
+        vscode.window.showInformationMessage("No flag found on this line");
+      }
+    },
+  );
+
+  vscode.workspace.onDidChangeTextDocument((event) => {
+    const uri = event.document.uri.toString();
+
+    const flags = getFlags();
+
+    event.contentChanges.forEach((change) => {
+      const startLine = change.range.start.line;
+      const endLine = change.range.end.line;
+
+      const linesAdded =
+        change.text.split("\n").length - 1 - (endLine - startLine);
+
+      if (linesAdded === 0) return;
+
+      flags.forEach((f) => {
+        if (f.uri !== uri) return;
+
+        // change ABOVE flag → shift entire flag
+        if (startLine < f.startLine) {
+          f.startLine += linesAdded;
+          f.endLine += linesAdded;
+        }
+        // change INSIDE flag → expand/shrink end
+        else if (startLine >= f.startLine && startLine <= f.endLine) {
+          // If insertion happens exactly at start → shift whole block
+          if (startLine === f.startLine) {
+            f.startLine += linesAdded;
+            f.endLine += linesAdded;
+          } else {
+            f.endLine += linesAdded;
+          }
+        }
+      });
+    });
+
+    // Re-render decorations
+    const editor = vscode.window.activeTextEditor;
+    if (editor && editor.document.uri.toString() === uri) {
+      updateDecorations(editor);
     }
-  }
-);
+  });
 
   context.subscriptions.push(welcomeMessage, codeFlag, codeUnflag);
 }
