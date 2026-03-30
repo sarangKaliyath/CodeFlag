@@ -10,18 +10,42 @@ const decorationType = vscode.window.createTextEditorDecorationType({
     rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 });
 
+const startDecoration = vscode.window.createTextEditorDecorationType({
+  gutterIconPath: path.join(__dirname, '../flag.svg'),
+  gutterIconSize: 'contain',
+});
+
+const endDecoration = vscode.window.createTextEditorDecorationType({
+  gutterIconPath: path.join(__dirname, '../end.svg'),
+  gutterIconSize: 'contain',
+});
+
 function updateDecorations(editor) {
   if (!editor) return;
 
   const uri = editor.document.uri.toString();
 
-  const decorations = getFlags()
-    .filter((f) => f.uri === uri)
-    .map((f) => ({
-      range: f.range,
-    }));
+  const startDecorations = [];
+  const endDecorations = [];
 
-  editor.setDecorations(decorationType, decorations);
+  getFlags()
+    .filter((f) => f.uri === uri)
+    .forEach((f) => {
+      // START marker
+      startDecorations.push({
+        range: new vscode.Range(f.startLine, 0, f.startLine, 0),
+      });
+
+      // END marker (only if different)
+      if (f.endLine !== f.startLine) {
+        endDecorations.push({
+          range: new vscode.Range(f.endLine, 0, f.endLine, 0),
+        });
+      }
+    });
+
+  editor.setDecorations(startDecoration, startDecorations);
+  editor.setDecorations(endDecoration, endDecorations);
 }
 
 module.exports = {
