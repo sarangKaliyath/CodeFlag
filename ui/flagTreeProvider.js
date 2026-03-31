@@ -36,8 +36,13 @@ class FlagTreeDataProvider {
     }
 
     if (element instanceof FileItem) {
+        
+      const sortedFlags = [...element.flags].sort(
+        (a, b) => a.range.start.line - b.range.start.line,
+      );
+
       return Promise.all(
-        element.flags.map(async (flag) => {
+        sortedFlags.map(async (flag) => {
           let doc = vscode.workspace.textDocuments.find(
             (d) => d.uri.toString() === flag.uri,
           );
@@ -96,7 +101,7 @@ class FlagItem extends vscode.TreeItem {
     super(`Line ${line}`, vscode.TreeItemCollapsibleState.None);
 
     this.id = `${flag.uri}:${flag.range.start.line}-${flag.range.end.line}`;
-    
+
     this.flag = flag;
 
     this.command = {
