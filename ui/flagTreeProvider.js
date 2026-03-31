@@ -36,10 +36,13 @@ class FlagTreeDataProvider {
     }
 
     if (element instanceof FileItem) {
-
       const sortedFlags = [...element.flags].sort(
         (a, b) => a.range.start.line - b.range.start.line,
       );
+
+      const activeEditor = vscode.window.activeTextEditor;
+      const activeLine = activeEditor?.selection.active.line;
+      const activeUri = activeEditor?.document.uri.toString();
 
       return Promise.all(
         sortedFlags.map(async (flag) => {
@@ -67,7 +70,12 @@ class FlagTreeDataProvider {
             preview = "";
           }
 
-          return new FlagItem(flag, preview);
+          const isActive =
+            flag.uri === activeUri &&
+            activeLine >= flag.range.start.line &&
+            activeLine <= flag.range.end.line;
+
+          return new FlagItem(flag, preview, isActive);
         }),
       );
     }
@@ -97,7 +105,7 @@ class FileItem extends vscode.TreeItem {
 
 // Flag node
 class FlagItem extends vscode.TreeItem {
-  constructor(flag, preview) {
+  constructor(flag, preview, isActive) {
     const line = flag.range.start.line + 1;
 
     super(`Line ${line}`, vscode.TreeItemCollapsibleState.None);
@@ -118,6 +126,10 @@ class FlagItem extends vscode.TreeItem {
 
     //Custom icon
     this.iconPath = new vscode.ThemeIcon("flag");
+
+    if (isActive) {
+      this.description = `👉 ${preview}`;
+    }
   }
 }
 
