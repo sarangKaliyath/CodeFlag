@@ -1,8 +1,9 @@
 {
   "name": "codeflag",
   "displayName": "CodeFlag",
+  "publisher": "sarang-kaliyath", 
   "description": "Allows you to add flags to your code, so that its easier to find later on...",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.110.0"
   },
@@ -35,7 +36,11 @@
       },
       {
         "command": "codeflag.removeFlagFromView",
-        "title": "Remove Flag"
+        "title": "Remove"
+      },
+      {
+        "command": "codeflag.renameFlag",
+        "title": "Rename"
       }
     ],
     "menus": {
@@ -68,6 +73,11 @@
           "command": "codeflag.removeFlagFromView",
           "when": "view == codeflagView && viewItem == flag",
           "group": "inline"
+        },
+        {
+          "command": "codeflag.renameFlag",
+          "when": "view == codeflagView && viewItem == flag",
+          "group": "inline"
         }
       ]
     },
@@ -87,7 +97,21 @@
           "name": "Code Flags"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "codeflag.flag",
+        "key": "ctrl+alt+f",
+        "mac": "cmd+alt+f",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "codeflag.unflag",
+        "key": "ctrl+alt+u",
+        "mac": "cmd+alt+u",
+        "when": "editorTextFocus"
+      }
+    ]
   },
   "scripts": {
     "lint": "eslint .",
