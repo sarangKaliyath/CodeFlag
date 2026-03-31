@@ -200,12 +200,54 @@ function activate(context) {
     },
   );
 
+const removeFromViewCommand = vscode.commands.registerCommand(
+  "codeflag.removeFlagFromView",
+  (flagItem) => {
+    if (!flagItem) return;
+
+    const flag = flagItem.flag;
+
+    if (!flag) {
+      console.error("No flag found on TreeItem");
+      return;
+    }
+
+    const flags = getFlags();
+
+    // FIX: match by values instead of reference
+    const index = flags.findIndex(
+      (f) =>
+        f.uri === flag.uri &&
+        f.range.start.line === flag.range.start.line &&
+        f.range.end.line === flag.range.end.line
+    );
+
+    if (index >= 0) {
+      removeFlag(index);
+
+      // refresh UI
+      flagProvider.refresh();
+
+      // refresh editor decorations
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        updateDecorations(editor);
+      }
+
+      vscode.window.showInformationMessage("Flag removed");
+    } else {
+      console.error("Flag not found in store");
+    }
+  }
+);
+
   context.subscriptions.push(
     welcomeMessage,
     codeFlag,
     codeUnflag,
     revealLineCommand,
     treeView,
+    removeFromViewCommand,
   );
 }
 
