@@ -60,8 +60,17 @@
         }
       ]
     },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codeflagContainer",
+          "title": "CodeFlag",
+           "icon": "resources/flag.svg"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "codeflagContainer": [
         {
           "id": "codeflagView",
           "name": "Code Flags"
