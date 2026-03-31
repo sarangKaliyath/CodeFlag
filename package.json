@@ -35,7 +35,11 @@
       },
       {
         "command": "codeflag.removeFlagFromView",
-        "title": "Remove Flag"
+        "title": "Remove"
+      },
+      {
+        "command": "codeflag.renameFlag",
+        "title": "Rename"
       }
     ],
     "menus": {
@@ -68,7 +72,12 @@
           "command": "codeflag.removeFlagFromView",
           "when": "view == codeflagView && viewItem == flag",
           "group": "inline"
-        }
+        },
+        {
+  "command": "codeflag.renameFlag",
+  "when": "view == codeflagView && viewItem == flag",
+  "group": "inline"
+}
       ]
     },
     "viewsContainers": {

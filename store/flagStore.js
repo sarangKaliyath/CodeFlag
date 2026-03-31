@@ -99,10 +99,18 @@ function loadFlags() {
     }));
 }
 
+function updateFlagLabel(index, label) {
+  if (flags[index]) {
+    flags[index].label = label;
+    saveFlags();
+  }
+}
+
 
 module.exports = {
   getFlags,
   addFlag,
   removeFlag,
-  initialStore
+  initialStore,
+  updateFlagLabel
 };

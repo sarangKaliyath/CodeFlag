@@ -6,6 +6,7 @@ const {
   addFlag,
   removeFlag,
   initialStore,
+  updateFlagLabel
 } = require("./store/flagStore");
 const { updateDecorations } = require("./ui/decoration");
 const { FlagTreeDataProvider } = require("./ui/flagTreeProvider");
@@ -244,6 +245,41 @@ function activate(context) {
     },
   );
 
+  const renameFlagCommand = vscode.commands.registerCommand(
+  "codeflag.renameFlag",
+  async (flagItem) => {
+    if (!flagItem || !flagItem.flag) return;
+
+    const flag = flagItem.flag;
+
+    const newLabel = await vscode.window.showInputBox({
+      value: flag.label || "",
+      placeHolder: "Rename bookmark",
+    });
+
+    if (newLabel === undefined) return; // user cancelled
+
+    const flags = getFlags();
+
+    const index = flags.findIndex(
+      (f) =>
+        f.uri === flag.uri &&
+        f.range.start.line === flag.range.start.line &&
+        f.range.end.line === flag.range.end.line
+    );
+
+    if (index >= 0) {
+      flags[index].label = newLabel.trim();
+
+      updateFlagLabel(index, newLabel.trim());
+
+      flagProvider.refresh();
+
+      vscode.window.showInformationMessage("Bookmark renamed");
+    }
+  }
+);
+
   vscode.window.onDidChangeTextEditorSelection((event) => {
     flagProvider.refresh();
   });
@@ -255,6 +291,7 @@ function activate(context) {
     revealLineCommand,
     treeView,
     removeFromViewCommand,
+    renameFlagCommand
   );
 }
 
