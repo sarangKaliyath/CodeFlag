@@ -45,7 +45,7 @@ function activate(context) {
 
   const codeFlag = vscode.commands.registerCommand(
     "codeflag.flag",
-    function () {
+    async function () {
       const editor = vscode.window.activeTextEditor;
       if (!editor) return;
 
@@ -113,7 +113,10 @@ function activate(context) {
 
       const mergedRange = new vscode.Range(mergedStart, 0, mergedEnd, 0);
 
-      addFlag(uri, mergedRange);
+      const label = await vscode.window.showInputBox({
+        placeHolder: "Add a name for this bookmark (optional)",
+      });
+      addFlag(uri, mergedRange, label || "");
       updateDecorations(editor);
       flagProvider.refresh();
 

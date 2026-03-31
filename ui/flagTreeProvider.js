@@ -121,7 +121,14 @@ class FlagItem extends vscode.TreeItem {
   constructor(flag, fullText, preview, isActive) {
     const line = flag.range.start.line + 1;
 
-    super(`Line ${line}`, vscode.TreeItemCollapsibleState.None);
+    const start = flag.range.start.line + 1;
+    const end = flag.range.end.line + 1;
+
+    const baseLabel = start === end ? `Line ${start}` : `Lines ${start}-${end}`;
+
+    const label = flag.label ? `[${flag.label}] ${baseLabel}` : baseLabel;
+
+    super(label, vscode.TreeItemCollapsibleState.None);
 
     this.id = `${flag.uri}:${flag.range.start.line}-${flag.range.end.line}`;
 

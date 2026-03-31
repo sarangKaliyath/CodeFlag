@@ -31,8 +31,8 @@ function getFlags() {
 /**
  * Add a flag using start + end
  */
-function addFlag(uri, range) {
-  flags.push({ uri, range });
+function addFlag(uri, range, label = "") {
+  flags.push({ uri, range, label});
   saveFlags();
 }
 
@@ -60,6 +60,7 @@ function saveFlags() {
       line: f.range.end.line,
       character: f.range.end.character,
     },
+    label: f.label || "",
   }));
 
   workspaceState.update(STORAGE_KEY, serializable);
@@ -94,6 +95,7 @@ function loadFlags() {
         new vscode.Position(f.start.line, f.start.character),
         new vscode.Position(f.end.line, f.end.character)
       ),
+      label: f.label || "",
     }));
 }
 
