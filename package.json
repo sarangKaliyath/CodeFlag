@@ -1,8 +1,9 @@
 {
   "name": "codeflag",
   "displayName": "CodeFlag",
+  "publisher": "sarang-kaliyath", 
   "description": "Allows you to add flags to your code, so that its easier to find later on...",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.110.0"
   },
