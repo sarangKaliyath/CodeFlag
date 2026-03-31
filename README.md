@@ -3,6 +3,19 @@ Easily add, manage, and navigate flags (bookmarks) in your code for faster devel
 
 ---
 
+## Table of Contents
+- [Quick Start](#quick-start)  
+- [Features Highlights](#features-highlights)  
+- [Detailed Usage](#detailed-usage)  
+  - [Add a Flag](#add-a-flag)  
+  - [Remove a Flag](#remove-a-flag)  
+  - [Rename a Flag](#rename-a-flag)  
+  - [Keyboard Shortcuts](#keyboard-shortcuts)  
+- [Screenshots](#screenshots)  
+- [Release Notes](#release-notes)  
+
+---
+
 ## Quick Start
 
 1. **Add a Flag**
