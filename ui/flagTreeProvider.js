@@ -62,12 +62,25 @@ class FlagTreeDataProvider {
           }
 
           let preview = "";
+          let fullText = "";
 
           try {
-            const lineText = doc.lineAt(flag.range.start.line).text;
-            preview = lineText.trim().substring(0, 80);
+            const start = flag.range.start.line;
+            const end = flag.range.end.line;
+
+            const lines = [];
+
+            for (let i = start; i <= end; i++) {
+              lines.push(doc.lineAt(i).text);
+            }
+
+            fullText = lines.join("\n");
+
+            // keep preview short (first line)
+            preview = lines[0].trim().substring(0, 80);
           } catch (e) {
             preview = "";
+            fullText = "";
           }
 
           const isActive =
@@ -75,7 +88,7 @@ class FlagTreeDataProvider {
             activeLine >= flag.range.start.line &&
             activeLine <= flag.range.end.line;
 
-          return new FlagItem(flag, preview, isActive);
+          return new FlagItem(flag, fullText, preview, isActive);
         }),
       );
     }
@@ -105,7 +118,7 @@ class FileItem extends vscode.TreeItem {
 
 // Flag node
 class FlagItem extends vscode.TreeItem {
-  constructor(flag, preview, isActive) {
+  constructor(flag, fullText, preview, isActive) {
     const line = flag.range.start.line + 1;
 
     super(`Line ${line}`, vscode.TreeItemCollapsibleState.None);
@@ -129,6 +142,17 @@ class FlagItem extends vscode.TreeItem {
 
     if (isActive) {
       this.description = `👉 ${preview}`;
+    }
+
+    if (fullText) {
+      const md = new vscode.MarkdownString();
+
+      // optional: dynamic language
+      const lang = flag.language || "javascript";
+
+      md.appendCodeblock(fullText, lang);
+
+      this.tooltip = md;
     }
   }
 }
