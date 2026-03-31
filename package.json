@@ -28,6 +28,10 @@
       {
         "command": "codeflag.unflag",
         "title": "Unflag code"
+      },
+      {
+        "command": "codeflag.revealLine",
+        "title": "Reveal Flag Location"
       }
     ],
     "menus": {
@@ -53,6 +57,14 @@
           "command": "codeflag.unflag",
           "when": "editorTextFocus",
           "group": "navigation"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "codeflagView",
+          "name": "Code Flags"
         }
       ]
     }
