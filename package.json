@@ -32,6 +32,10 @@
       {
         "command": "codeflag.revealLine",
         "title": "Reveal Flag Location"
+      },
+      {
+        "command": "codeflag.removeFlagFromView",
+        "title": "Remove Flag"
       }
     ],
     "menus": {
@@ -58,6 +62,13 @@
           "when": "editorTextFocus",
           "group": "navigation"
         }
+      ],
+      "view/item/context": [
+        {
+          "command": "codeflag.removeFlagFromView",
+          "when": "view == codeflagView && viewItem == flag",
+          "group": "inline"
+        }
       ]
     },
     "viewsContainers": {
@@ -65,7 +76,7 @@
         {
           "id": "codeflagContainer",
           "title": "CodeFlag",
-           "icon": "resources/flag.svg"
+          "icon": "resources/flag.svg"
         }
       ]
     },

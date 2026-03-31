@@ -95,6 +95,8 @@ class FlagItem extends vscode.TreeItem {
 
     super(`Line ${line}`, vscode.TreeItemCollapsibleState.None);
 
+    this.id = `${flag.uri}:${flag.range.start.line}-${flag.range.end.line}`;
+    
     this.flag = flag;
 
     this.command = {
