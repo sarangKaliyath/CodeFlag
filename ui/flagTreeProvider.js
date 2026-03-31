@@ -36,7 +36,7 @@ class FlagTreeDataProvider {
     }
 
     if (element instanceof FileItem) {
-        
+
       const sortedFlags = [...element.flags].sort(
         (a, b) => a.range.start.line - b.range.start.line,
       );
@@ -87,6 +87,8 @@ class FileItem extends vscode.TreeItem {
     this.uri = uri;
     this.flags = flags;
     this.contextValue = "file";
+
+    this.description = `(${flags.length})`;
 
     // Use VS Code's built-in file icon
     this.resourceUri = vscode.Uri.file(filePath);
