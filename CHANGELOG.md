@@ -2,8 +2,19 @@
 
 All notable changes to the "codeflag" extension will be documented in this file.
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
+--- 
 
 ## [Unreleased]
+- Save flags per Git branch (future feature)
 
-- Initial release
+---
+
+## [1.0.0] - 2026-03-31
+### Added
+- Initial release of the CodeFlag extension
+- Add and remove flags for single-line and multi-line code
+- Rename flags for better organization
+- Named bookmarks for easy navigation
+- Keyboard shortcuts for adding/removing flags
+- Smart flag merging (subset flags merge or ignored)
+- Activity Bar preview for flagged code
