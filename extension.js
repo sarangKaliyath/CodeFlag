@@ -8,7 +8,7 @@ const {
   initialStore,
 } = require("./store/flagStore");
 const { updateDecorations } = require("./ui/decoration");
-
+const { FlagTreeDataProvider } = require("./ui/flagTreeProvider");
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 
@@ -18,6 +18,13 @@ const { updateDecorations } = require("./ui/decoration");
 
 function activate(context) {
   initialStore(context);
+
+  const flagProvider = new FlagTreeDataProvider();
+
+  const treeView = vscode.window.createTreeView("codeflagView", {
+    treeDataProvider: flagProvider,
+    showCollapseAll: true,
+  });
 
   // Apply to all visible editors immediately
   vscode.window.visibleTextEditors.forEach((editor) => {
@@ -107,8 +114,8 @@ function activate(context) {
       const mergedRange = new vscode.Range(mergedStart, 0, mergedEnd, 0);
 
       addFlag(uri, mergedRange);
-
       updateDecorations(editor);
+      flagProvider.refresh();
 
       // message
       if (overlappingFlags.length > 0) {
@@ -153,7 +160,7 @@ function activate(context) {
       if (index >= 0) {
         removeFlag(index);
         updateDecorations(editor);
-
+        flagProvider.refresh();
         vscode.window.showInformationMessage("Codeflag removed");
       } else {
         vscode.window.showInformationMessage("No flag found on this line");
@@ -176,7 +183,30 @@ function activate(context) {
     }
   });
 
-  context.subscriptions.push(welcomeMessage, codeFlag, codeUnflag);
+  const revealLineCommand = vscode.commands.registerCommand(
+    "codeflag.revealLine",
+    (flag) => {
+      const uri = vscode.Uri.parse(flag.uri);
+
+      vscode.workspace.openTextDocument(uri).then((doc) => {
+        vscode.window.showTextDocument(doc).then((editor) => {
+          editor.revealRange(flag.range, vscode.TextEditorRevealType.InCenter);
+          editor.selection = new vscode.Selection(
+            flag.range.start,
+            flag.range.start,
+          );
+        });
+      });
+    },
+  );
+
+  context.subscriptions.push(
+    welcomeMessage,
+    codeFlag,
+    codeUnflag,
+    revealLineCommand,
+    treeView,
+  );
 }
 
 // This method is called when your extension is deactivated
