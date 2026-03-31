@@ -36,10 +36,13 @@ class FlagTreeDataProvider {
     }
 
     if (element instanceof FileItem) {
-        
       const sortedFlags = [...element.flags].sort(
         (a, b) => a.range.start.line - b.range.start.line,
       );
+
+      const activeEditor = vscode.window.activeTextEditor;
+      const activeLine = activeEditor?.selection.active.line;
+      const activeUri = activeEditor?.document.uri.toString();
 
       return Promise.all(
         sortedFlags.map(async (flag) => {
@@ -59,15 +62,33 @@ class FlagTreeDataProvider {
           }
 
           let preview = "";
+          let fullText = "";
 
           try {
-            const lineText = doc.lineAt(flag.range.start.line).text;
-            preview = lineText.trim().substring(0, 80);
+            const start = flag.range.start.line;
+            const end = flag.range.end.line;
+
+            const lines = [];
+
+            for (let i = start; i <= end; i++) {
+              lines.push(doc.lineAt(i).text);
+            }
+
+            fullText = lines.join("\n");
+
+            // keep preview short (first line)
+            preview = lines[0].trim().substring(0, 80);
           } catch (e) {
             preview = "";
+            fullText = "";
           }
 
-          return new FlagItem(flag, preview);
+          const isActive =
+            flag.uri === activeUri &&
+            activeLine >= flag.range.start.line &&
+            activeLine <= flag.range.end.line;
+
+          return new FlagItem(flag, fullText, preview, isActive);
         }),
       );
     }
@@ -88,6 +109,8 @@ class FileItem extends vscode.TreeItem {
     this.flags = flags;
     this.contextValue = "file";
 
+    this.description = `(${flags.length})`;
+
     // Use VS Code's built-in file icon
     this.resourceUri = vscode.Uri.file(filePath);
   }
@@ -95,7 +118,7 @@ class FileItem extends vscode.TreeItem {
 
 // Flag node
 class FlagItem extends vscode.TreeItem {
-  constructor(flag, preview) {
+  constructor(flag, fullText, preview, isActive) {
     const line = flag.range.start.line + 1;
 
     super(`Line ${line}`, vscode.TreeItemCollapsibleState.None);
@@ -116,6 +139,21 @@ class FlagItem extends vscode.TreeItem {
 
     //Custom icon
     this.iconPath = new vscode.ThemeIcon("flag");
+
+    if (isActive) {
+      this.description = `👉 ${preview}`;
+    }
+
+    if (fullText) {
+      const md = new vscode.MarkdownString();
+
+      // optional: dynamic language
+      const lang = flag.language || "javascript";
+
+      md.appendCodeblock(fullText, lang);
+
+      this.tooltip = md;
+    }
   }
 }
 
