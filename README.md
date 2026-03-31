@@ -1,65 +1,104 @@
-# codeflag README
-
-This is the README for your extension "codeflag". After writing up a brief description, we recommend including the following sections.
-
-## Features
-
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
-
-## Requirements
-
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
-
-## Known Issues
-
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+# CodeFlag
+Easily add, manage, and navigate flags (bookmarks) in your code for faster development.
 
 ---
 
-## Working with Markdown
+## Quick Start
 
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
+1. **Add a Flag**
+   - Single-line: Place cursor → Right-click → **Add Flag**  
+   - Multi-line: Select lines → Right-click → **Add Flag**
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
+2. **Remove a Flag**
+   - Editor: Right-click flagged line → **Remove Flag**  
+   - Activity Bar: Hover → Click **Remove**
 
-## For more information
+3. **Rename a Flag**
+   - Hover over a flag → Click **Rename** → Enter new name
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+4. **Keyboard Shortcuts**
+   | Action      | Shortcut        |
+   |------------|----------------|
+   | Add Flag    | Ctrl + Alt + F |
+   | Remove Flag | Ctrl + Alt + R |
 
-**Enjoy!**
+---
+
+## Features Highlights
+
+- Add, remove, and rename flags quickly  
+- Named bookmarks for easy navigation  
+- **Smart flag merging:**  
+  - Flagging a subset of an existing flag is **ignored**  
+  - Flags that include smaller flagged blocks **merge** into one larger block  
+- **Activity Bar preview:** Hover over a flag to preview the flagged code  
+- Fully supports single-line and multi-line selections  
+
+---
+
+## Detailed Usage
+
+### Add a Flag
+
+**Single-line**
+1. Place your cursor on the line you want to flag  
+2. Right-click and select **"Add Flag"**
+
+**Multi-line**
+1. Select multiple lines of code  
+2. Right-click the selection  
+3. Select **"Add Flag"**
+
+---
+
+### Remove a Flag
+
+**From Editor**
+1. Right-click on a flagged line  
+2. Select **"Remove Flag"**
+
+**From Activity Bar**
+1. Hover over the flagged item  
+2. Click the **Remove** option  
+
+---
+
+### Rename a Flag
+1. Hover over the flagged item  
+2. Click the **Rename** option  
+3. Enter a new name or description  
+
+---
+
+### Keyboard Shortcuts
+
+| Action        | Shortcut        |
+|---------------|----------------|
+| Add Flag      | Ctrl + Alt + F |
+| Remove Flag   | Ctrl + Alt + R |
+
+---
+
+## Screenshots
+
+**Add Flag: Multi-line**  
+![Add Flag: Multi-line](images/multiLineAddFlag.gif)  
+
+**Add Flag: Single-line**  
+![Add Flag: Single-line](images/singleLineAddFlag.gif)  
+
+**Remove Flag**  
+![Remove Flag](images/removeFlag.gif)  
+
+**Remove Flag: Activity Bar**  
+![Remove Flag](images/removeFlagActivityBar.gif)  
+
+**Rename Flag: Activity Bar**  
+![Rename Flag](images/renameFlag.gif)  
+
+---
+
+## Release Notes
+
+### 1.0.0
+- Initial release
