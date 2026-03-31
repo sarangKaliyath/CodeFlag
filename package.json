@@ -74,10 +74,10 @@
           "group": "inline"
         },
         {
-  "command": "codeflag.renameFlag",
-  "when": "view == codeflagView && viewItem == flag",
-  "group": "inline"
-}
+          "command": "codeflag.renameFlag",
+          "when": "view == codeflagView && viewItem == flag",
+          "group": "inline"
+        }
       ]
     },
     "viewsContainers": {
@@ -96,7 +96,21 @@
           "name": "Code Flags"
         }
       ]
-    }
+    },
+    "keybindings": [
+      {
+        "command": "codeflag.flag",
+        "key": "ctrl+alt+f",
+        "mac": "cmd+alt+f",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "codeflag.unflag",
+        "key": "ctrl+alt+u",
+        "mac": "cmd+alt+u",
+        "when": "editorTextFocus"
+      }
+    ]
   },
   "scripts": {
     "lint": "eslint .",

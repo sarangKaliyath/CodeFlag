@@ -115,7 +115,7 @@ function activate(context) {
       const mergedRange = new vscode.Range(mergedStart, 0, mergedEnd, 0);
 
       const label = await vscode.window.showInputBox({
-        placeHolder: "Add a name for this bookmark (optional)",
+        placeHolder: "Add a name for this flag (optional)",
       });
       addFlag(uri, mergedRange, label || "");
       updateDecorations(editor);
@@ -254,7 +254,7 @@ function activate(context) {
 
     const newLabel = await vscode.window.showInputBox({
       value: flag.label || "",
-      placeHolder: "Rename bookmark",
+      placeHolder: "Rename flag",
     });
 
     if (newLabel === undefined) return; // user cancelled
@@ -275,7 +275,7 @@ function activate(context) {
 
       flagProvider.refresh();
 
-      vscode.window.showInformationMessage("Bookmark renamed");
+      vscode.window.showInformationMessage("Flag renamed");
     }
   }
 );
