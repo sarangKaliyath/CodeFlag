@@ -1,4 +1,5 @@
 const vscode = require("vscode");
+const path = require("path");
 const { getFlags } = require("../store/flagStore");
 
 class FlagTreeDataProvider {
@@ -15,7 +16,7 @@ class FlagTreeDataProvider {
     return element;
   }
 
-  getChildren(element) {
+  async getChildren(element) {
     const flags = getFlags();
 
     if (!element) {
@@ -35,7 +36,35 @@ class FlagTreeDataProvider {
     }
 
     if (element instanceof FileItem) {
-      return element.flags.map((flag) => new FlagItem(flag));
+      return Promise.all(
+        element.flags.map(async (flag) => {
+          let doc = vscode.workspace.textDocuments.find(
+            (d) => d.uri.toString() === flag.uri,
+          );
+
+          // If not open → load it
+          if (!doc) {
+            try {
+              doc = await vscode.workspace.openTextDocument(
+                vscode.Uri.parse(flag.uri),
+              );
+            } catch (e) {
+              return new FlagItem(flag, "");
+            }
+          }
+
+          let preview = "";
+
+          try {
+            const lineText = doc.lineAt(flag.range.start.line).text;
+            preview = lineText.trim().substring(0, 80);
+          } catch (e) {
+            preview = "";
+          }
+
+          return new FlagItem(flag, preview);
+        }),
+      );
     }
 
     return [];
@@ -45,18 +74,23 @@ class FlagTreeDataProvider {
 // File node
 class FileItem extends vscode.TreeItem {
   constructor(uri, flags) {
-    const label = vscode.workspace.asRelativePath(vscode.Uri.parse(uri));
+    const filePath = vscode.Uri.parse(uri).fsPath;
+    const label = vscode.workspace.asRelativePath(filePath);
+
     super(label, vscode.TreeItemCollapsibleState.Expanded);
 
     this.uri = uri;
     this.flags = flags;
     this.contextValue = "file";
+
+    // Use VS Code's built-in file icon
+    this.resourceUri = vscode.Uri.file(filePath);
   }
 }
 
 // Flag node
 class FlagItem extends vscode.TreeItem {
-  constructor(flag) {
+  constructor(flag, preview) {
     const line = flag.range.start.line + 1;
 
     super(`Line ${line}`, vscode.TreeItemCollapsibleState.None);
@@ -70,6 +104,11 @@ class FlagItem extends vscode.TreeItem {
     };
 
     this.contextValue = "flag";
+
+    this.description = preview;
+
+    //Custom icon
+    this.iconPath = new vscode.ThemeIcon("flag");
   }
 }
 
