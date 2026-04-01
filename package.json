@@ -1,12 +1,18 @@
 {
   "name": "codeflag",
   "displayName": "CodeFlag",
-  "publisher": "sarang-kaliyath", 
+  "publisher": "sarang-kaliyath",
   "description": "Allows you to add flags to your code, so that its easier to find later on...",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "icon": "resources/icon.png",
-  "keywords": ["flag", "bookmark", "code marker", "highlight", "todo"],
+  "keywords": [
+    "flag",
+    "bookmark",
+    "code marker",
+    "highlight",
+    "todo"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/sarangKaliyath/CodeFlag.git"
