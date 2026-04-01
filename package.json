@@ -4,6 +4,11 @@
   "publisher": "sarang-kaliyath", 
   "description": "Allows you to add flags to your code, so that its easier to find later on...",
   "version": "1.0.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sarangKaliyath/CodeFlag.git"
+  },
   "engines": {
     "vscode": "^1.110.0"
   },
