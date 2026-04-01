@@ -5,6 +5,8 @@
   "description": "Allows you to add flags to your code, so that its easier to find later on...",
   "version": "1.0.0",
   "license": "MIT",
+  "icon": "resources/icon.png",
+  "keywords": ["flag", "bookmark", "code marker", "highlight", "todo"],
   "repository": {
     "type": "git",
     "url": "https://github.com/sarangKaliyath/CodeFlag.git"
@@ -25,30 +27,50 @@
     "commands": [
       {
         "command": "codeflag.welcomeMessage",
-        "title": "welcome message"
+        "title": "welcome message",
+        "category": "CodeFlag"
       },
       {
         "command": "codeflag.flag",
-        "title": "Flag code"
+        "title": "Flag code",
+        "category": "CodeFlag"
       },
       {
         "command": "codeflag.unflag",
-        "title": "Unflag code"
+        "title": "Unflag code",
+        "category": "CodeFlag"
       },
       {
         "command": "codeflag.revealLine",
-        "title": "Reveal Flag Location"
+        "title": "Reveal Flag Location",
+        "category": "CodeFlag"
       },
       {
         "command": "codeflag.removeFlagFromView",
-        "title": "Remove"
+        "title": "Remove",
+        "category": "CodeFlag"
       },
       {
         "command": "codeflag.renameFlag",
-        "title": "Rename"
+        "title": "Rename",
+        "category": "CodeFlag"
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "codeflag.revealLine",
+          "when": "false"
+        },
+        {
+          "command": "codeflag.removeFlagFromView",
+          "when": "false"
+        },
+        {
+          "command": "codeflag.renameFlag",
+          "when": "false"
+        }
+      ],
       "editor/context": [
         {
           "command": "codeflag.flag",
