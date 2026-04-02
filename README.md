@@ -33,7 +33,7 @@ Easily add, manage, and navigate flags (bookmarks) in your code for faster devel
    | Action      | Shortcut        |
    |------------|----------------|
    | Add Flag    | Ctrl + Alt + F |
-   | Remove Flag | Ctrl + Alt + R |
+   | Remove Flag | Ctrl + Alt + U |
 
 ---
 
@@ -88,7 +88,7 @@ Easily add, manage, and navigate flags (bookmarks) in your code for faster devel
 | Action        | Shortcut        |
 |---------------|----------------|
 | Add Flag      | Ctrl + Alt + F |
-| Remove Flag   | Ctrl + Alt + R |
+| Remove Flag   | Ctrl + Alt + U |
 
 ---
 
