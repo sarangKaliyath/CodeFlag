@@ -18,13 +18,13 @@
     "url": "https://github.com/sarangKaliyath/CodeFlag.git"
   },
   "engines": {
-    "vscode": "^1.110.0"
+    "vscode": "^1.60.0"
   },
   "categories": [
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished",
+    "onView:codeflagView",
     "onCommand:codeflag.flag",
     "onCommand:codeflag.unflag"
   ],
