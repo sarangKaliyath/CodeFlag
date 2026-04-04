@@ -165,7 +165,13 @@ CodeFlag now intelligently tracks flags **per Git branch**.
 
 ## Release Notes
 
-### 1.1.0
+## [1.1.1] - 2026-04-04
+
+### Fixed
+
+- Flags not loading on IDE startup until CodeFlag view is opened
+
+### [1.1.0] 2026-04-04
 
 - ✨ Added Git branch-aware flag tracking
 - 🔄 Automatic UI refresh on branch switch
@@ -180,14 +186,14 @@ If your flags seem missing after updating:
 - Switch back to the branch where they were created
 - They are not deleted — just context-specific
 
-### 1.0.2
+### [1.0.2] - 2026-04-02
 
 - 🐛 Bug fixes and stability improvements
 
-### 1.0.1
+### [1.0.1] - 2026-04-01
 
 - 🐛 Minor bug fixes
 
-### 1.0.0
+### [1.0.0] - 2026-04-01
 
 - Initial release
