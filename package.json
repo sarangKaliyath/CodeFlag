@@ -54,11 +54,13 @@
       {
         "command": "codeflag.removeFlagFromView",
         "title": "Remove",
+        "icon": "resources/delete.svg",
         "category": "CodeFlag"
       },
       {
         "command": "codeflag.renameFlag",
         "title": "Rename",
+        "icon": "resources/edit.svg",
         "category": "CodeFlag"
       }
     ],
@@ -108,9 +110,19 @@
           "group": "inline"
         },
         {
+          "command": "codeflag.removeFlagFromView",
+          "when": "view == codeflagView && viewItem == flag",
+          "group": "navigation"
+        },
+        {
           "command": "codeflag.renameFlag",
           "when": "view == codeflagView && viewItem == flag",
           "group": "inline"
+        },
+        {
+          "command": "codeflag.renameFlag",
+          "when": "view == codeflagView && viewItem == flag",
+          "group": "navigation"
         }
       ]
     },
