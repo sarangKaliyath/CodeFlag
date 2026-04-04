@@ -1,4 +1,5 @@
 const vscode = require("vscode");
+const path = require("path");
 
 let flags = [];
 
@@ -25,23 +26,52 @@ function initialStore(context) {
 }
 
 function getFlags() {
-  return flags;
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) return [];
+
+  const context = getContextForUri(editor.document.uri.toString());
+
+  return flags.filter(
+    (f) =>
+      f.workspace === context.workspace &&
+      f.repoRoot === context.repoRoot &&
+      f.branch === context.branch
+  );
 }
 
-/**
- * Add a flag using start + end
- */
 function addFlag(uri, range, label = "") {
-  flags.push({ uri, range, label});
+  const context = getContextForUri(uri);
+
+  flags.push({
+    uri,
+    range,
+    label,
+    repoRoot: context.repoRoot,
+    branch: context.branch,
+    workspace: context.workspace,
+  });
+
   saveFlags();
 }
-
 /**
  * Remove by index
  */
-function removeFlag(index) {
-  flags.splice(index, 1);
-  saveFlags();
+function removeFlag(index, visibleFlags) {
+  const target = visibleFlags[index];
+
+  const realIndex = flags.findIndex(
+    (f) =>
+      f.uri === target.uri &&
+      f.range.start.line === target.range.start.line &&
+      f.range.end.line === target.range.end.line &&
+      f.branch === target.branch &&
+      f.repoRoot === target.repoRoot
+  );
+
+  if (realIndex >= 0) {
+    flags.splice(realIndex, 1);
+    saveFlags();
+  }
 }
 
 /**
@@ -61,6 +91,10 @@ function saveFlags() {
       character: f.range.end.character,
     },
     label: f.label || "",
+
+    repoRoot: f.repoRoot || "__no_repo__",
+    branch: f.branch || "__no_branch__",
+    workspace: f.workspace || "__no_workspace__",
   }));
 
   workspaceState.update(STORAGE_KEY, serializable);
@@ -69,9 +103,6 @@ function saveFlags() {
 function isValidNumber(n) {
   return typeof n === "number" && !isNaN(n) && n >= 0;
 }
-/**
- * Load flags (recreate Range)
- */
 
 function loadFlags() {
   if (!workspaceState) return;
@@ -96,16 +127,78 @@ function loadFlags() {
         new vscode.Position(f.end.line, f.end.character)
       ),
       label: f.label || "",
+
+      repoRoot: f.repoRoot || "__no_repo__",
+      branch: f.branch || "__no_branch__",
+      workspace: f.workspace || "__no_workspace__",
     }));
 }
 
-function updateFlagLabel(index, label) {
-  if (flags[index]) {
-    flags[index].label = label;
+function updateFlagLabel(index, label, visibleFlags) {
+  const target = visibleFlags[index];
+
+  const realIndex = flags.findIndex(
+    (f) =>
+      f.uri === target.uri &&
+      f.range.start.line === target.range.start.line &&
+      f.range.end.line === target.range.end.line &&
+      f.branch === target.branch &&
+      f.repoRoot === target.repoRoot
+  );
+
+  if (realIndex >= 0) {
+    flags[realIndex].label = label;
     saveFlags();
   }
 }
 
+async function getGitApi() {
+  const ext = vscode.extensions.getExtension("vscode.git");
+
+  if (!ext) return null;
+
+  if (!ext.isActive) {
+    await ext.activate();
+  }
+
+  return ext.exports.getAPI(1);
+}
+
+function getRepoForUri(uri) {
+  const ext = vscode.extensions.getExtension("vscode.git");
+
+  if (!ext || !ext.isActive) return null;
+
+  const api = ext.exports.getAPI(1);
+
+  return api.repositories.find((repo) =>
+    uri.fsPath.startsWith(repo.rootUri.fsPath)
+  );
+}
+
+function getBranchForRepo(repo) {
+  if (!repo || !repo.state.HEAD) return "__no_branch__";
+  return repo.state.HEAD.name || "__detached__";
+}
+
+function getWorkspaceKey() {
+  const folder = vscode.workspace.workspaceFolders?.[0];
+  if (!folder) return "__no_workspace__";
+
+  return path.basename(folder.uri.fsPath);
+}
+
+function getContextForUri(uriString) {
+  const uri = vscode.Uri.parse(uriString);
+
+  const repo = getRepoForUri(uri);
+
+  return {
+    workspace: getWorkspaceKey(),
+    repoRoot: repo?.rootUri.fsPath || "__no_repo__",
+    branch: getBranchForRepo(repo),
+  };
+}
 
 module.exports = {
   getFlags,

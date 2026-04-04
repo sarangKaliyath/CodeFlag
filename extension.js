@@ -6,7 +6,7 @@ const {
   addFlag,
   removeFlag,
   initialStore,
-  updateFlagLabel
+  updateFlagLabel,
 } = require("./store/flagStore");
 const { updateDecorations } = require("./ui/decoration");
 const { FlagTreeDataProvider } = require("./ui/flagTreeProvider");
@@ -17,8 +17,9 @@ const { FlagTreeDataProvider } = require("./ui/flagTreeProvider");
  * @param {vscode.ExtensionContext} context
  */
 
-function activate(context) {
+async function activate(context) {
   initialStore(context);
+  console.log("Current branch:", context.branch);
 
   const flagProvider = new FlagTreeDataProvider();
 
@@ -75,10 +76,10 @@ function activate(context) {
       }
       const range = new vscode.Range(startLine, 0, endLine, 0);
 
-      const flags = getFlags();
+      const visibleFlags = getFlags();
 
       // Find overlapping flags
-      const overlappingFlags = flags.filter((f) => {
+      const overlappingFlags = visibleFlags.filter((f) => {
         if (f.uri !== uri) return false;
 
         const existingStart = f.range.start.line;
@@ -99,10 +100,10 @@ function activate(context) {
       });
 
       // Remove overlapping flags
-      for (let i = flags.length - 1; i >= 0; i--) {
-        const f = flags[i];
+      for (let i = visibleFlags.length - 1; i >= 0; i--) {
+        const f = visibleFlags[i];
         if (f.uri === uri && overlappingFlags.includes(f)) {
-          removeFlag(i);
+          removeFlag(i, visibleFlags);
         }
       }
 
@@ -153,16 +154,16 @@ function activate(context) {
         line = editor.selection.start.line;
       }
 
-      const flags = getFlags();
+      const visibleFlags = getFlags();
 
-      const index = flags.findIndex((f) => {
+      const index = visibleFlags.findIndex((f) => {
         if (f.uri !== uri) return false;
 
         return line >= f.range.start.line && line <= f.range.end.line;
       });
 
       if (index >= 0) {
-        removeFlag(index);
+        removeFlag(index, visibleFlags);
         updateDecorations(editor);
         flagProvider.refresh();
         vscode.window.showInformationMessage("Codeflag removed");
@@ -171,8 +172,6 @@ function activate(context) {
       }
     },
   );
-
-  context.subscriptions.push(codeFlag, codeUnflag);
 
   // Refresh on editor switch
   vscode.window.onDidChangeActiveTextEditor((editor) => {
@@ -216,10 +215,10 @@ function activate(context) {
         return;
       }
 
-      const flags = getFlags();
+      const visibleFlags = getFlags();
 
       // FIX: match by values instead of reference
-      const index = flags.findIndex(
+      const index = visibleFlags.findIndex(
         (f) =>
           f.uri === flag.uri &&
           f.range.start.line === flag.range.start.line &&
@@ -227,7 +226,7 @@ function activate(context) {
       );
 
       if (index >= 0) {
-        removeFlag(index);
+        removeFlag(index, visibleFlags);
 
         // refresh UI
         flagProvider.refresh();
@@ -246,43 +245,87 @@ function activate(context) {
   );
 
   const renameFlagCommand = vscode.commands.registerCommand(
-  "codeflag.renameFlag",
-  async (flagItem) => {
-    if (!flagItem || !flagItem.flag) return;
+    "codeflag.renameFlag",
+    async (flagItem) => {
+      if (!flagItem || !flagItem.flag) return;
 
-    const flag = flagItem.flag;
+      const flag = flagItem.flag;
 
-    const newLabel = await vscode.window.showInputBox({
-      value: flag.label || "",
-      placeHolder: "Rename flag",
-    });
+      const newLabel = await vscode.window.showInputBox({
+        value: flag.label || "",
+        placeHolder: "Rename flag",
+      });
 
-    if (newLabel === undefined) return; // user cancelled
+      if (newLabel === undefined) return; // user cancelled
 
-    const flags = getFlags();
+      const visibleFlags = getFlags();
 
-    const index = flags.findIndex(
-      (f) =>
-        f.uri === flag.uri &&
-        f.range.start.line === flag.range.start.line &&
-        f.range.end.line === flag.range.end.line
-    );
+      const index = visibleFlags.findIndex(
+        (f) =>
+          f.uri === flag.uri &&
+          f.range.start.line === flag.range.start.line &&
+          f.range.end.line === flag.range.end.line,
+      );
 
-    if (index >= 0) {
-      flags[index].label = newLabel.trim();
+      if (index >= 0) {
+        updateFlagLabel(index, newLabel.trim(), visibleFlags);
 
-      updateFlagLabel(index, newLabel.trim());
+        flagProvider.refresh();
 
-      flagProvider.refresh();
+        const editor = vscode.window.activeTextEditor;
+        if (editor) updateDecorations(editor);
 
-      vscode.window.showInformationMessage("Flag renamed");
-    }
-  }
-);
+        vscode.window.showInformationMessage("Flag renamed");
+      }
+    },
+  );
+
+  let lastLine = -1;
 
   vscode.window.onDidChangeTextEditorSelection((event) => {
-    flagProvider.refresh();
+    const line = event.selections[0]?.active.line;
+
+    if (line !== lastLine) {
+      lastLine = line;
+      flagProvider.refresh();
+    }
   });
+
+  const ext = vscode.extensions.getExtension("vscode.git");
+
+  if (ext) {
+    if (!ext.isActive) {
+    await ext.activate();
+  }
+
+  const api = ext.exports.getAPI(1);
+
+    // listen to already opened repos
+    api.repositories.forEach((repo) => {
+      repo.state.onDidChange(() => {
+        const editor = vscode.window.activeTextEditor;
+
+        if (editor) {
+          updateDecorations(editor);
+        }
+
+        flagProvider.refresh();
+      });
+    });
+
+    // listen to future repos
+    api.onDidOpenRepository((repo) => {
+      repo.state.onDidChange(() => {
+        const editor = vscode.window.activeTextEditor;
+
+        if (editor) {
+          updateDecorations(editor);
+        }
+
+        flagProvider.refresh();
+      });
+    });
+  }
 
   context.subscriptions.push(
     welcomeMessage,
@@ -291,7 +334,7 @@ function activate(context) {
     revealLineCommand,
     treeView,
     removeFromViewCommand,
-    renameFlagCommand
+    renameFlagCommand,
   );
 }
 
