@@ -1,25 +1,37 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require("vscode");
 const {
   getFlags,
   addFlag,
   removeFlag,
   initialStore,
-  updateFlagLabel
+  updateFlagLabel,
 } = require("./store/flagStore");
 const { updateDecorations } = require("./ui/decoration");
 const { FlagTreeDataProvider } = require("./ui/flagTreeProvider");
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+
+// ---------------------------------------------------------------------------
+// Entry point — called once by VS Code when the extension is first activated.
+// All commands, providers, and event listeners are registered here and pushed
+// onto `context.subscriptions` so VS Code disposes them on deactivation.
+// ---------------------------------------------------------------------------
 
 /**
- * @param {vscode.ExtensionContext} context
+ * Extension activation handler.
+ * Wires up persistent storage, the sidebar tree view, all commands, and every
+ * event listener needed to keep decorations and the tree in sync.
+ *
+ * @param {vscode.ExtensionContext} context - Provided by VS Code; carries
+ *   workspaceState (used for persistence) and the subscriptions array.
  */
-
-function activate(context) {
+async function activate(context) {
+  // Hydrate the flag store from persisted workspaceState before anything else.
   initialStore(context);
 
+  // -------------------------------------------------------------------------
+  // Sidebar tree view
+  // -------------------------------------------------------------------------
+
+  // The data provider drives the "CodeFlag" panel in the Explorer sidebar.
   const flagProvider = new FlagTreeDataProvider();
 
   const treeView = vscode.window.createTreeView("codeflagView", {
@@ -27,23 +39,49 @@ function activate(context) {
     showCollapseAll: true,
   });
 
-  // Apply to all visible editors immediately
+  // -------------------------------------------------------------------------
+  // Initial decoration pass
+  // -------------------------------------------------------------------------
+
+  // Decorate every editor that is already visible when the extension activates
+  // (e.g. tabs that were open from the previous session).
   vscode.window.visibleTextEditors.forEach((editor) => {
     updateDecorations(editor);
   });
 
-  // Fallback for active editor
+  // Belt-and-suspenders: also update the focused editor explicitly, in case it
+  // wasn't included in visibleTextEditors on some VS Code versions.
   if (vscode.window.activeTextEditor) {
     updateDecorations(vscode.window.activeTextEditor);
   }
 
+  // -------------------------------------------------------------------------
+  // Commands
+  // -------------------------------------------------------------------------
+
+  /** Smoke-test command — shows a greeting. Registered in package.json as "codeflag.welcomeMessage". */
   const welcomeMessage = vscode.commands.registerCommand(
     "codeflag.welcomeMessage",
     function () {
-      vscode.window.showInformationMessage("Hello From the other side!");
+      vscode.window.showInformationMessage("Hello from the other side!");
     },
   );
 
+  /**
+   * FLAG command ("codeflag.flag")
+   *
+   * Adds a flag for the current selection (or cursor line). If the new range
+   * overlaps with one or more existing flags they are all merged into a single
+   * contiguous flag, which prevents duplicate / nested flags on the same lines.
+   *
+   * Flow:
+   *   1. Resolve the selected range (single line or multi-line).
+   *   2. Find all flags in the current file that overlap the selection.
+   *   3. Merge their ranges into one bounding range.
+   *   4. Remove the individual overlapping flags.
+   *   5. Prompt the user for an optional label.
+   *   6. Persist the merged flag and refresh the UI.
+   */
   const codeFlag = vscode.commands.registerCommand(
     "codeflag.flag",
     async function () {
@@ -54,17 +92,18 @@ function activate(context) {
       const uri = document.uri.toString();
       const selection = editor.selection;
 
-      // Normalize selection
+      // -- Step 1: Resolve the line range from the current selection ----------
       let startLine;
       let endLine;
 
       if (selection.isEmpty) {
-        // single cursor or gutter click
+        // No text selected — flag the line the cursor sits on.
         const line = selection.active.line;
         startLine = line;
         endLine = line;
       } else {
-        // multi-line selection
+        // Text selected — clamp to whole lines (characters are ignored; flags
+        // are line-granular).
         startLine = Math.min(selection.start.line, selection.end.line);
         endLine = Math.max(selection.start.line, selection.end.line);
       }
@@ -75,21 +114,22 @@ function activate(context) {
       }
       const range = new vscode.Range(startLine, 0, endLine, 0);
 
-      const flags = getFlags();
+      const visibleFlags = getFlags();
 
-      // Find overlapping flags
-      const overlappingFlags = flags.filter((f) => {
+      // -- Step 2: Detect overlapping flags in the same file ------------------
+      const overlappingFlags = visibleFlags.filter((f) => {
         if (f.uri !== uri) return false;
 
         const existingStart = f.range.start.line;
         const existingEnd = f.range.end.line;
 
+        // Two ranges overlap when neither ends before the other starts.
         return (
           range.start.line <= existingEnd && range.end.line >= existingStart
         );
       });
 
-      // Compute merged range
+      // -- Step 3: Compute the bounding (merged) range ------------------------
       let mergedStart = range.start.line;
       let mergedEnd = range.end.line;
 
@@ -98,15 +138,16 @@ function activate(context) {
         mergedEnd = Math.max(mergedEnd, f.range.end.line);
       });
 
-      // Remove overlapping flags
-      for (let i = flags.length - 1; i >= 0; i--) {
-        const f = flags[i];
+      // -- Step 4: Remove the overlapping flags (iterate in reverse so that
+      //    splice-based removal inside removeFlag doesn't shift indices) -------
+      for (let i = visibleFlags.length - 1; i >= 0; i--) {
+        const f = visibleFlags[i];
         if (f.uri === uri && overlappingFlags.includes(f)) {
-          removeFlag(i);
+          removeFlag(i, visibleFlags);
         }
       }
 
-      // Add merged flag
+      // -- Step 5: Prompt for an optional label --------------------------------
       if (typeof mergedStart !== "number" || typeof mergedEnd !== "number") {
         console.error("Invalid merged range", mergedStart, mergedEnd);
         return;
@@ -117,11 +158,13 @@ function activate(context) {
       const label = await vscode.window.showInputBox({
         placeHolder: "Add a name for this flag (optional)",
       });
+
+      // -- Step 6: Persist the flag and refresh UI ----------------------------
       addFlag(uri, mergedRange, label || "");
       updateDecorations(editor);
       flagProvider.refresh();
 
-      // message
+      // Inform the user whether a plain add or a merge happened.
       if (overlappingFlags.length > 0) {
         vscode.window.showInformationMessage(
           `Flags merged: ${mergedStart + 1} → ${mergedEnd + 1}`,
@@ -134,7 +177,13 @@ function activate(context) {
     },
   );
 
-  // UNFLAG (based on cursor inside range)
+  /**
+   * UNFLAG command ("codeflag.unflag")
+   *
+   * Removes the flag that covers the cursor's current line. If text is
+   * selected, the start line is used for the lookup. No-ops with a message
+   * when no flag is found on the line.
+   */
   const codeUnflag = vscode.commands.registerCommand(
     "codeflag.unflag",
     function () {
@@ -146,23 +195,24 @@ function activate(context) {
       let line;
 
       if (editor.selection.isEmpty) {
-        // single cursor or gutter click
+        // Single cursor — use its line.
         line = editor.selection.active.line;
       } else {
-        // multi-line selection: unflag the start line
+        // Multi-line selection — anchor to the start line.
         line = editor.selection.start.line;
       }
 
-      const flags = getFlags();
+      const visibleFlags = getFlags();
 
-      const index = flags.findIndex((f) => {
+      // Find the first flag whose range contains the target line.
+      const index = visibleFlags.findIndex((f) => {
         if (f.uri !== uri) return false;
 
         return line >= f.range.start.line && line <= f.range.end.line;
       });
 
       if (index >= 0) {
-        removeFlag(index);
+        removeFlag(index, visibleFlags);
         updateDecorations(editor);
         flagProvider.refresh();
         vscode.window.showInformationMessage("Codeflag removed");
@@ -172,21 +222,15 @@ function activate(context) {
     },
   );
 
-  context.subscriptions.push(codeFlag, codeUnflag);
-
-  // Refresh on editor switch
-  vscode.window.onDidChangeActiveTextEditor((editor) => {
-    if (editor) updateDecorations(editor);
-  });
-
-  // Refresh on document open
-  vscode.workspace.onDidOpenTextDocument((doc) => {
-    const editor = vscode.window.activeTextEditor;
-    if (editor && editor.document === doc) {
-      updateDecorations(editor);
-    }
-  });
-
+  /**
+   * REVEAL LINE command ("codeflag.revealLine")
+   *
+   * Navigates to the file and line associated with a flag. Triggered when the
+   * user clicks a flag entry in the sidebar tree view. Centers the range in
+   * the editor and moves the cursor to the flag's start position.
+   *
+   * @param {{ uri: string, range: vscode.Range }} flag - The flag to navigate to
+   */
   const revealLineCommand = vscode.commands.registerCommand(
     "codeflag.revealLine",
     (flag) => {
@@ -204,6 +248,16 @@ function activate(context) {
     },
   );
 
+  /**
+   * REMOVE FROM VIEW command ("codeflag.removeFlagFromView")
+   *
+   * Deletes a flag via the inline remove button in the sidebar tree. Uses
+   * value-based matching (uri + line numbers) rather than object reference
+   * equality because the tree item holds a snapshot of the flag, not the live
+   * store reference.
+   *
+   * @param {{ flag: object }} flagItem - The tree item whose flag should be removed
+   */
   const removeFromViewCommand = vscode.commands.registerCommand(
     "codeflag.removeFlagFromView",
     (flagItem) => {
@@ -216,10 +270,10 @@ function activate(context) {
         return;
       }
 
-      const flags = getFlags();
+      const visibleFlags = getFlags();
 
-      // FIX: match by values instead of reference
-      const index = flags.findIndex(
+      // Match by value (not reference) since the tree item holds a snapshot.
+      const index = visibleFlags.findIndex(
         (f) =>
           f.uri === flag.uri &&
           f.range.start.line === flag.range.start.line &&
@@ -227,12 +281,11 @@ function activate(context) {
       );
 
       if (index >= 0) {
-        removeFlag(index);
+        removeFlag(index, visibleFlags);
 
-        // refresh UI
+        // Refresh both the tree and the editor decorations.
         flagProvider.refresh();
 
-        // refresh editor decorations
         const editor = vscode.window.activeTextEditor;
         if (editor) {
           updateDecorations(editor);
@@ -245,45 +298,131 @@ function activate(context) {
     },
   );
 
+  /**
+   * RENAME FLAG command ("codeflag.renameFlag")
+   *
+   * Prompts the user for a new label and updates the flag in the store.
+   * Triggered via the inline rename button in the sidebar tree view.
+   * Cancelling the input box (pressing Escape) is a no-op.
+   *
+   * @param {{ flag: object }} flagItem - The tree item whose flag should be renamed
+   */
   const renameFlagCommand = vscode.commands.registerCommand(
-  "codeflag.renameFlag",
-  async (flagItem) => {
-    if (!flagItem || !flagItem.flag) return;
+    "codeflag.renameFlag",
+    async (flagItem) => {
+      if (!flagItem || !flagItem.flag) return;
 
-    const flag = flagItem.flag;
+      const flag = flagItem.flag;
 
-    const newLabel = await vscode.window.showInputBox({
-      value: flag.label || "",
-      placeHolder: "Rename flag",
-    });
+      const newLabel = await vscode.window.showInputBox({
+        value: flag.label || "",
+        placeHolder: "Rename flag",
+      });
 
-    if (newLabel === undefined) return; // user cancelled
+      if (newLabel === undefined) return; // User pressed Escape — cancel silently.
 
-    const flags = getFlags();
+      const visibleFlags = getFlags();
 
-    const index = flags.findIndex(
-      (f) =>
-        f.uri === flag.uri &&
-        f.range.start.line === flag.range.start.line &&
-        f.range.end.line === flag.range.end.line
-    );
+      const index = visibleFlags.findIndex(
+        (f) =>
+          f.uri === flag.uri &&
+          f.range.start.line === flag.range.start.line &&
+          f.range.end.line === flag.range.end.line,
+      );
 
-    if (index >= 0) {
-      flags[index].label = newLabel.trim();
+      if (index >= 0) {
+        updateFlagLabel(index, newLabel.trim(), visibleFlags);
 
-      updateFlagLabel(index, newLabel.trim());
+        flagProvider.refresh();
 
-      flagProvider.refresh();
+        const editor = vscode.window.activeTextEditor;
+        if (editor) updateDecorations(editor);
 
-      vscode.window.showInformationMessage("Flag renamed");
-    }
-  }
-);
+        vscode.window.showInformationMessage("Flag renamed");
+      }
+    },
+  );
 
-  vscode.window.onDidChangeTextEditorSelection((event) => {
-    flagProvider.refresh();
+  // -------------------------------------------------------------------------
+  // Event listeners
+  // -------------------------------------------------------------------------
+
+  // Re-decorate whenever the user switches to a different editor tab.
+  vscode.window.onDidChangeActiveTextEditor((editor) => {
+    if (editor) updateDecorations(editor);
   });
 
+  // Re-decorate when a document is opened (handles split-pane scenarios where
+  // the opened doc becomes active but the editor reference changes).
+  vscode.workspace.onDidOpenTextDocument((doc) => {
+    const editor = vscode.window.activeTextEditor;
+    if (editor && editor.document === doc) {
+      updateDecorations(editor);
+    }
+  });
+
+  // Refresh the tree whenever the cursor moves to a different line so that
+  // the "current line" highlight in the tree stays in sync. Debounced by
+  // comparing `lastLine` to avoid unnecessary redraws.
+  let lastLine = -1;
+
+  vscode.window.onDidChangeTextEditorSelection((event) => {
+    const line = event.selections[0]?.active.line;
+
+    if (line !== lastLine) {
+      lastLine = line;
+      flagProvider.refresh();
+    }
+  });
+
+  // -------------------------------------------------------------------------
+  // Git branch change listener
+  // -------------------------------------------------------------------------
+
+  // When the user switches branches the active context changes, so decorations
+  // and the tree must be refreshed to show only the flags for the new branch.
+  const ext = vscode.extensions.getExtension("vscode.git");
+
+  if (ext) {
+    if (!ext.isActive) {
+      await ext.activate();
+    }
+
+    const api = ext.exports.getAPI(1);
+
+    // Listen to repos that are already open when the extension activates.
+    api.repositories.forEach((repo) => {
+      repo.state.onDidChange(() => {
+        const editor = vscode.window.activeTextEditor;
+
+        if (editor) {
+          updateDecorations(editor);
+        }
+
+        flagProvider.refresh();
+      });
+    });
+
+    // Also listen to any repo that the user opens later during the session.
+    api.onDidOpenRepository((repo) => {
+      repo.state.onDidChange(() => {
+        const editor = vscode.window.activeTextEditor;
+
+        if (editor) {
+          updateDecorations(editor);
+        }
+
+        flagProvider.refresh();
+      });
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Register disposables
+  // -------------------------------------------------------------------------
+
+  // Pushing everything onto subscriptions ensures VS Code cleans up commands,
+  // views, and listeners automatically when the extension is deactivated.
   context.subscriptions.push(
     welcomeMessage,
     codeFlag,
@@ -291,11 +430,12 @@ function activate(context) {
     revealLineCommand,
     treeView,
     removeFromViewCommand,
-    renameFlagCommand
+    renameFlagCommand,
   );
 }
 
-// This method is called when your extension is deactivated
+// Called by VS Code when the extension is deactivated (e.g. window closes).
+// No manual cleanup needed — everything was pushed onto context.subscriptions.
 function deactivate() {}
 
 module.exports = {
