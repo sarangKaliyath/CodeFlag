@@ -26,7 +26,6 @@ const { FlagTreeDataProvider } = require("./ui/flagTreeProvider");
 async function activate(context) {
   // Hydrate the flag store from persisted workspaceState before anything else.
   initialStore(context);
-  console.log("Current branch:", context.branch);
 
   // -------------------------------------------------------------------------
   // Sidebar tree view
